@@ -120,30 +120,37 @@ namespace fy::fft
                 __m256 v1 = _mm256_load_ps(in + 8);
                 radix3_2batch_kernel_avx2(v0, v1, out);
             }
-        }
 
-        const std::size_t rem = batch - b;
-        if (rem == 0)
-        {
-            return;
-        }
-        else if (rem == 1)
-        {
-            apply_radix3_single<invert>(input + b * 6, output + b * 6);
-            return;
+            const std::size_t rem = batch - b;
+            if (rem == 0)
+            {
+                return;
+            }
+            else if (rem == 1)
+            {
+                apply_radix3_single<invert>(input + b * 6, output + b * 6);
+                return;
+            }
+            else
+            {
+                const float* in = input + b * 6;
+                float* out = output + b * 6;
+
+                __m128 a0 = _mm_load_ps(in + 0);
+                __m128 a1 = _mm_load_ps(in + 4);
+                __m128 a2 = _mm_load_ps(in + 8);
+
+                __m256 v0 = _mm256_insertf128_ps(_mm256_castps128_ps256(a0), a1, 1);
+                __m256 v1 = _mm256_insertf128_ps(_mm256_castps128_ps256(a2), _mm_setzero_ps(), 1);
+                radix3_2batch_kernel_avx2(v0, v1, out);
+            }
         }
         else
         {
-            const float* in = input + b * 6;
-            float* out = output + b * 6;
-
-            __m128 a0 = _mm_load_ps(in + 0);
-            __m128 a1 = _mm_load_ps(in + 4);
-            __m128 a2 = _mm_load_ps(in + 8);
-
-            __m256 v0 = _mm256_insertf128_ps(_mm256_castps128_ps256(a0), a1, 1);
-            __m256 v1 = _mm256_insertf128_ps(_mm256_castps128_ps256(a2), _mm_setzero_ps(), 1);
-            radix3_2batch_kernel_avx2(v0, v1, out);
+            for (; b < batch; ++b)
+            {
+                apply_radix3_single<invert>(input + b * 6, output + b * 6);
+            }
         }
     }
 
@@ -761,17 +768,15 @@ namespace fy::fft
     template<bool invert>
     [[msvc::forceinline]] bool especially_batch_kernel_dispatch(std::size_t radix, const float* input, float* output, std::size_t batch)
     {
-        [[msvc::flatten]]
+        const bool probe_only = (input == nullptr || output == nullptr);
+        switch (radix)
         {
-            switch (radix)
-            {
-            case 2: { apply_radix2_batch<invert>(input, output, batch); return true; }
-            case 3: { apply_radix3_batch<invert>(input, output, batch); return true; }
-            case 4: { apply_radix4_batch<invert>(input, output, batch); return true; }
-            case 5: { apply_radix5_batch<invert>(input, output, batch); return true; }
-            case 7: { apply_radix7_batch<invert>(input, output, batch); return true; }
-            default: { return false; }
-            }
+            case 2: { if (!probe_only) { apply_radix2_batch<invert>(input, output, batch); } return true; }
+            case 3: { if (!probe_only) { apply_radix3_batch<invert>(input, output, batch); } return true; }
+            case 4: { if (!probe_only) { apply_radix4_batch<invert>(input, output, batch); } return true; }
+            case 5: { if (!probe_only) { apply_radix5_batch<invert>(input, output, batch); } return true; }
+            case 7: { if (!probe_only) { apply_radix7_batch<invert>(input, output, batch); } return true; }
+            default:{ return false; }
         }
     }
 }

@@ -1,18 +1,6 @@
 #ifndef _FOYE_FFT_RADIX4_HPP_
 #define _FOYE_FFT_RADIX4_HPP_
 
-#include <cmath>
-#include <algorithm>
-#include <limits>
-#include <immintrin.h>
-#include <array>
-#include <assert.h>
-#include <memory>
-#include <numbers>
-#include <thread>
-#include <vector>
-#include <complex>
-
 static bool is_power_of_four(std::size_t n)
 {
     return n > 0 && (n & (n - 1)) == 0 && (n & 0x55555555) != 0;
@@ -237,10 +225,10 @@ namespace fy::fft::internal_radix4
             __m256 r2 = _mm256_load_ps(data + i + 16);
             __m256 r3 = _mm256_load_ps(data + i + 24);
 
-            transpose_4x4(r0, r1, r2, r3);
+            transpose_4x4_complexf32(r0, r1, r2, r3);
 
             butterfly_radix4_pure<invert>(r0, r1, r2, r3);
-            transpose_4x4(r0, r1, r2, r3);
+            transpose_4x4_complexf32(r0, r1, r2, r3);
 
             r1 = complex_mul_packed<invert>(r1, tw.w1_n, tw.w1_s);
             r2 = complex_mul_packed<invert>(r2, tw.w2_n, tw.w2_s);

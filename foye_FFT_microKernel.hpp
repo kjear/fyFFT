@@ -1,15 +1,6 @@
 #ifndef _FOYE_FFT_MICROKERNEL_HPP_
 #define _FOYE_FFT_MICROKERNEL_HPP_
 
-#include <cmath>
-#include <algorithm>
-#include <limits>
-#include <immintrin.h>
-#include <array>
-#include <assert.h>
-#include <memory>
-#include <numbers>
-
 namespace fy::fft
 {
     struct micro_kernel_common
@@ -188,7 +179,7 @@ namespace fy::fft
             r2 = fma_complexf32(r2, _mm256_load_ps(C.w_row2_n), _mm256_load_ps(C.w_row2_s));
             r3 = fma_complexf32(r3, _mm256_load_ps(C.w_row3_n), _mm256_load_ps(C.w_row3_s));
 
-            transpose_4x4(r0, r1, r2, r3);
+            transpose_4x4_complexf32(r0, r1, r2, r3);
             radix4_butterfly_base(r0, r1, r2, r3, mask);
         }
 

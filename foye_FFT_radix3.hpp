@@ -1,16 +1,6 @@
 #ifndef _FOYE_FFT_RADIX3_HPP_
 #define _FOYE_FFT_RADIX3_HPP_
 
-#include <cmath>
-#include <algorithm>
-#include <limits>
-#include <immintrin.h>
-#include <array>
-#include <assert.h>
-#include <memory>
-#include <numbers>
-#include <thread>
-
 namespace fy::fft::internal_radix3
 {
     namespace radix3_lut

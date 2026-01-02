@@ -1,16 +1,6 @@
 #ifndef _FOYE_FFT_RADIX5_HPP_
 #define _FOYE_FFT_RADIX5_HPP_
 
-#include <cmath>
-#include <algorithm>
-#include <limits>
-#include <immintrin.h>
-#include <array>
-#include <assert.h>
-#include <memory>
-#include <numbers>
-#include <thread>
-
 namespace fy::fft::internal_radix5
 {
     namespace radix5_lut
@@ -286,7 +276,7 @@ namespace fy::fft::internal_radix5
 
                 radix5_kernel_winograd_avx2_interleaved<invert>(u0, u1, u2, u3, u4);
 
-                transpose_4x4(u0, u1, u2, u3);
+                transpose_4x4_complexf32(u0, u1, u2, u3);
 
                 _mm256_store_ps(dst + i * 2, u0);
                 _mm_store_sd(reinterpret_cast<double*>(dst + i * 2 + 8), _mm_castps_pd(_mm256_castps256_ps128(u4)));

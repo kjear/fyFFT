@@ -329,9 +329,9 @@ namespace fy::fft::internal_radix7
 
                 radix7_kernel_winograd_interleaved<invert>(u0, u1, u2, u3, u4, u5, u6);
 
-                transpose_4x4(u0, u1, u2, u3);
+                transpose_4x4_complexf32(u0, u1, u2, u3);
                 __m256 u7 = _mm256_setzero_ps();
-                transpose_4x4(u4, u5, u6, u7);
+                transpose_4x4_complexf32(u4, u5, u6, u7);
 
                 _mm256_store_ps(dst + i * 2, u0);
                 _mm_store_ps(dst + i * 2 + 8, _mm256_castps256_ps128(u4));

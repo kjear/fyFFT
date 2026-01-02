@@ -29,7 +29,7 @@ inline constexpr bool enable_thread_safe = true;
 inline constexpr bool enable_thread_safe = false;
 #endif
 
-#if defined(__AVX2__) && (__AVX2__)
+#if (defined(__AVX2__) && (__AVX2__)) || defined(FOYE_FFT_FORCE_ENABLE_AVX2)
 inline constexpr bool is_avx2_available = true;
 #else
 inline constexpr bool is_avx2_available = false;
@@ -42,6 +42,19 @@ inline constexpr bool is_avx2_available = false;
 #endif
 
 #define FOYE_FFT_DISABLE_NON_STANDARD_FP_EXCEPTION (_mm_setcsr(_mm_getcsr() | 0x8040))
+
+#define FOYE_MXCSR_DAZ   (1u << 6)
+#define FOYE_MXCSR_FTZ   (1u << 15)
+#define FOYE_MXCSR_NON_STANDARD_FP \
+    (FOYE_MXCSR_DAZ | FOYE_MXCSR_FTZ)
+
+struct MXCSR
+{
+	MXCSR() : __foye_fp_saved_csr(_mm_getcsr()) { }
+	~MXCSR() { _mm_setcsr(__foye_fp_saved_csr); }
+private:
+	unsigned int __foye_fp_saved_csr;
+};
 
 
 #include "foye_FFT_utility.hpp"
@@ -203,13 +216,6 @@ static constexpr bool is_prime(std::size_t num)
 	return true;
 }
 
-struct basic_unsmooth_path_invoker
-{
-	virtual ~basic_unsmooth_path_invoker() = default;
-	virtual void forward(const float* input, float* output) { }
-	virtual void backward(const float* input, float* output) { }
-};
-
 #include "foye_FFT_bluestein.hpp"
 #include "foye_FFT_mix_radix.hpp"
 #include "foye_FFT_rader.hpp"
@@ -217,7 +223,7 @@ struct basic_unsmooth_path_invoker
 
 struct FFT1D_C2C_invoker
 {
-	basic_unsmooth_path_invoker* invoker;
+	fy::fft::basic_unsmooth_path_invoker* invoker;
 	std::size_t N;
 
 	FFT1D_C2C_invoker(std::size_t length) : invoker(nullptr), N(length)

@@ -9,6 +9,14 @@ namespace fy::fft
 		void unlock() {}
 	};
 
+	struct basic_unsmooth_path_invoker
+	{
+		virtual ~basic_unsmooth_path_invoker() = default;
+		virtual void forward(const float* input, float* output) {}
+		virtual void backward(const float* input, float* output) {}
+	};
+
+
 	template<typename T, std::size_t alignment = is_avx2_available ? 32 : alignof(T)>
 	struct allocator
 	{
@@ -50,9 +58,12 @@ namespace fy::fft
 			return ptr;
 		}
 
-		void deallocate(pointer p, std::size_t n) noexcept
+		void deallocate(pointer p, std::size_t) noexcept
 		{
-			_aligned_free(reinterpret_cast<void*>(p));
+			if (p)
+			{
+				_aligned_free(reinterpret_cast<void*>(p));
+			}
 		}
 
 		bool operator==(const allocator&) const noexcept { return true; }
@@ -67,7 +78,7 @@ namespace fy::fft
 	template<typename T>
 	using aligned_vector_type = std::vector<T, fy::fft::allocator<T>>;
 
-	[[msvc::forceinline]] static void transpose_4x4(__m256& r0, __m256& r1, __m256& r2, __m256& r3)
+	[[msvc::forceinline]] static void transpose_4x4_complexf32(__m256& r0, __m256& r1, __m256& r2, __m256& r3)
 	{
 		__m256d r0d = _mm256_castps_pd(r0);
 		__m256d r1d = _mm256_castps_pd(r1);
@@ -85,7 +96,7 @@ namespace fy::fft
 		r3 = _mm256_castpd_ps(_mm256_permute2f128_pd(t1, t3, 0x31));
 	}
 
-	[[msvc::forceinline]] static void transpose_matrix(const float* src, float* dst, std::size_t rows, std::size_t cols)
+	[[msvc::forceinline]] static void transpose_matrix_complexf32(const float* src, float* dst, std::size_t rows, std::size_t cols)
 	{
 		constexpr std::size_t BLOCK_SIZE = 32;
 
@@ -121,8 +132,8 @@ namespace fy::fft
 							__m256 b2 = _mm256_load_ps(src_ptr + 2 * src_stride + 8);
 							__m256 b3 = _mm256_load_ps(src_ptr + 3 * src_stride + 8);
 
-							transpose_4x4(a0, a1, a2, a3);
-							transpose_4x4(b0, b1, b2, b3);
+							transpose_4x4_complexf32(a0, a1, a2, a3);
+							transpose_4x4_complexf32(b0, b1, b2, b3);
 
 							_mm256_store_ps(dst_ptr + 0 * dst_stride, a0);
 							_mm256_store_ps(dst_ptr + 1 * dst_stride, a1);
@@ -145,7 +156,7 @@ namespace fy::fft
 							__m256 r2 = _mm256_load_ps(src_ptr + 2 * src_stride);
 							__m256 r3 = _mm256_load_ps(src_ptr + 3 * src_stride);
 
-							transpose_4x4(r0, r1, r2, r3);
+							transpose_4x4_complexf32(r0, r1, r2, r3);
 
 							_mm256_store_ps(dst_ptr + 0 * dst_stride, r0);
 							_mm256_store_ps(dst_ptr + 1 * dst_stride, r1);
